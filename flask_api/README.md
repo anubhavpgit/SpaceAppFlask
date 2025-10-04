@@ -1,208 +1,111 @@
 # ClearSkies API
 
-> **Air quality intelligence from space to your fingertips.**
+Unified air quality intelligence platform integrating NASA TEMPO satellite data, OpenAQ ground sensors, and OpenWeather data.
 
-NASA TEMPO satellite observations meet ground truth and weather context in a single, elegant API.
+## Features
 
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      ClearSkies API                         │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
-│  │  TEMPO   │  │  OpenAQ  │  │   NOAA   │  │  Cache   │  │
-│  │Satellite │  │ Ground   │  │ Weather  │  │  Layer   │  │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │
-│       │             │             │              │         │
-│       └─────────────┴─────────────┴──────────────┘         │
-│                        │                                    │
-│                  ┌─────▼─────┐                             │
-│                  │ Services  │                             │
-│                  └─────┬─────┘                             │
-│                        │                                    │
-│                  ┌─────▼─────┐                             │
-│                  │   Routes  │                             │
-│                  └───────────┘                             │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
+- 🛰️ **NASA TEMPO Satellite Data** - Atmospheric measurements from space
+- 🌍 **OpenAQ v3 Ground Sensors** - Real-time street-level air quality
+- 🌤️ **OpenWeather Integration** - Weather context and conditions
+- 📊 **Unified Dashboard Endpoint** - All data in one API call
+- 🔐 **Bearer Token Authentication** - Secure API access
+- 📱 **React Native Ready** - Optimized for mobile apps
 
 ## Quick Start
 
+### 1. Install Dependencies
+
 ```bash
-# Install dependencies
-source .venv/bin/activate
-pip install Flask requests earthaccess xarray netCDF4 h5netcdf cachetools
+pip install -r requirements.txt
+```
 
-# Download TEMPO data (requires NASA Earthdata account)
-python download_tempo.py --max-files 5
+### 2. Configure Environment
 
-# Start the API
+```bash
+cp .env.example .env
+# Edit .env with your API keys
+```
+
+### 3. Run Development Server
+
+```bash
 python app.py
 ```
+
+Server will start at `http://localhost:5000`
 
 ## API Endpoints
 
-### `GET /`
-API documentation and available endpoints.
+### Unified Dashboard Endpoint
 
-### `GET /health`
-System health check.
+**POST** `/api/dashboard`
 
-**Response:**
+Returns all necessary data for React Native dashboard in a single request.
+
+**Headers:**
+```
+Authorization: Bearer <your_api_key>
+Content-Type: application/json
+```
+
+**Request Body:**
 ```json
 {
-  "status": "operational",
-  "version": "1.0.0",
-  "timestamp": "2024-09-01T12:00:00Z"
+  "latitude": 37.7749,
+  "longitude": -122.4194
 }
 ```
 
-### `GET /tempo?lat={lat}&lon={lon}`
-NASA TEMPO satellite pollutant data (NO₂, O₃, HCHO).
+### Other Endpoints
 
-**Parameters:**
-- `lat` (float): Latitude (default: 40.7128)
-- `lon` (float): Longitude (default: -74.0060)
+- **POST** `/api/air-quality/current` - Current air quality only
+- **POST** `/api/forecast` - 24-hour forecast
+- **POST** `/api/alerts` - Health alerts
+- **GET** `/api/health` - Health check
 
-**Example:**
-```bash
-curl "http://localhost:5001/tempo?lat=40.7&lon=-74.0"
-```
+## Environment Variables
 
-**Response:**
-```json
-{
-  "success": true,
-  "request": {
-    "latitude": 40.7,
-    "longitude": -74.0,
-    "timestamp": "2024-09-01T12:00:00Z"
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `API_KEY` | Authentication token | Yes |
+| `OPENAQ_API_KEY` | OpenAQ v3 API key | Recommended |
+| `OPENWEATHER_API_KEY` | OpenWeather API key | Recommended |
+| `NASA_EARTHDATA_TOKEN` | NASA Earthdata token | Optional |
+| `FLASK_ENV` | Environment (development/production) | No |
+| `PORT` | Server port (default: 5000) | No |
+
+## Data Sources
+
+### NASA TEMPO
+- Tropospheric pollutant measurements
+- NO2, O3, HCHO from satellite
+- Coverage: North America
+
+### OpenAQ v3
+- Ground-based sensor network
+- PM2.5, PM10, O3, NO2, SO2, CO
+- Global coverage
+
+### OpenWeather
+- Temperature, humidity, wind
+- Weather conditions
+- Global coverage
+
+## React Native Integration
+
+```typescript
+const response = await fetch('http://localhost:5000/api/dashboard', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer your_api_key_here'
   },
-  "response": {
-    "available": true,
-    "source": "NASA TEMPO Satellite",
-    "data": {
-      "pollutant": "vertical_column_troposphere",
-      "value": 4.55e15,
-      "unit": "molecules/cm^2",
-      "coordinates": {
-        "requested": {"lat": 40.7, "lon": -74.0},
-        "actual": {"lat": 40.736, "lon": -73.988}
-      }
-    }
-  }
-}
+  body: JSON.stringify({
+    latitude: 37.7749,
+    longitude: -122.4194
+  })
+});
+
+const data = await response.json();
+console.log(data.data.current.aqi);
 ```
-
-### `GET /forecast?lat={lat}&lon={lon}`
-**Unified air quality forecast** - the flagship endpoint.
-
-Merges:
-- 🛰️ NASA TEMPO satellite observations
-- 📍 OpenAQ ground station measurements
-- 🌤️ NOAA weather conditions
-
-**Example:**
-```bash
-curl "http://localhost:5001/forecast?lat=34.05&lon=-118.24"
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "forecast": {
-    "location": {
-      "latitude": 34.05,
-      "longitude": -118.24,
-      "timestamp": "2024-09-01T12:00:00Z"
-    },
-    "satellite": { ... },
-    "ground_stations": { ... },
-    "weather": { ... },
-    "summary": {
-      "air_quality": "moderate",
-      "confidence": "very high",
-      "notes": [
-        "Satellite observation: 3.24e+15 molecules/cm^2",
-        "Ground validation: 3 stations nearby",
-        "Weather: Clear, wind 5 mph"
-      ]
-    }
-  }
-}
-```
-
-### `GET /cache/stats`
-View cache performance statistics.
-
-### `POST /cache/clear`
-Clear all cached data.
-
-## Configuration
-
-Edit `config.py` to customize:
-
-- Cache TTL (time-to-live)
-- Data directories
-- API endpoints
-- Geographic bounds
-- Rate limits
-
-## Project Structure
-
-```
-flask_api/
-├── app.py              # Main application (routes, error handlers)
-├── config.py           # Configuration and settings
-├── services.py         # Business logic (TEMPO, OpenAQ, NOAA)
-├── cache.py            # Intelligent caching layer
-├── tempo_util.py       # TEMPO NetCDF file utilities
-├── download_tempo.py   # NASA Earthdata download script
-└── README.md           # This file
-```
-
-## Design Philosophy
-
-**Elegance:** Every line of code serves a purpose. No cruft.
-
-**Performance:** Intelligent caching ensures fast responses without hammering data sources.
-
-**Extensibility:** Clean separation of concerns. Add new data sources effortlessly.
-
-**Reliability:** Production-grade error handling. Failures are graceful, not catastrophic.
-
-**Clarity:** Code reads like prose. Comments explain *why*, not *what*.
-
-## Development
-
-```bash
-# Run in development mode (5-minute cache)
-export FLASK_ENV=development
-python app.py
-
-# Run in production mode (1-hour cache)
-export FLASK_ENV=production
-python app.py
-```
-
-## Credits
-
-Built with:
-- **Flask** - Web framework
-- **earthaccess** - NASA Earthdata integration
-- **xarray** - NetCDF data handling
-- **cachetools** - Intelligent caching
-- **requests** - HTTP client
-
-Data sources:
-- NASA TEMPO satellite (via Earthdata)
-- OpenAQ ground stations
-- NOAA Weather Service
-
----
-
-*Designed for clarity. Built for scale. Crafted with care.*

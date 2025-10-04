@@ -7,3 +7,5 @@ gunicorn==21.2.0
 google-generativeai>=0.3.0
 xarray>=2023.0.0
 h5netcdf>=1.2.0
+timezonefinder>=6.0.0
+pytz>=2023.3

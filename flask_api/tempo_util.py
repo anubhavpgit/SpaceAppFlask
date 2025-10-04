@@ -81,9 +81,35 @@ def normalize_longitude(lon):
     return lon
 
 
+def is_location_in_tempo_coverage(lat, lon):
+    """
+    Check if a location is within TEMPO's coverage area (North America).
+
+    TEMPO coverage:
+    - Latitude: 17° to 64° (roughly Mexico to Alaska)
+    - Longitude: -140° to -50° (Pacific to Atlantic)
+
+    Args:
+        lat: Latitude
+        lon: Longitude (normalized to -180 to 180)
+
+    Returns:
+        bool: True if location is within coverage, False otherwise
+    """
+    normalized_lon = normalize_longitude(lon)
+
+    # TEMPO coverage bounds (North America)
+    lat_min, lat_max = 17.0, 64.0
+    lon_min, lon_max = -140.0, -50.0
+
+    return (lat_min <= lat <= lat_max) and (lon_min <= normalized_lon <= lon_max)
+
+
 def get_nearest_value(file_path, lat, lon):
     """
     Extract the nearest pollutant value from a TEMPO NetCDF file for given coordinates.
+
+    Returns None if location is outside TEMPO coverage area (North America).
 
     Args:
         file_path: Path to TEMPO NetCDF file
@@ -108,6 +134,12 @@ def get_nearest_value(file_path, lat, lon):
         'query_lon': normalize_longitude(lon),
         'error': None
     }
+
+    # Check if location is within TEMPO coverage
+    if not is_location_in_tempo_coverage(lat, lon):
+        result['error'] = f'Location ({lat}, {normalize_longitude(lon)}) is outside TEMPO coverage area (North America: 17-64°N, 140-50°W)'
+        result['value'] = None
+        return result
 
     try:
         # Open dataset with h5netcdf engine

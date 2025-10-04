@@ -253,11 +253,21 @@ def dashboard(lat: float, lon: float):
         # Log successful response
         structured_logger.log_ai_summary('dashboard_complete', 0, processing_time, True)
 
-        return jsonify({
+        response_data = {
             'success': True,
             'timestamp': datetime.utcnow().isoformat() + 'Z',
             'data': dashboard_data
-        })
+        }
+
+        # Log complete response for debugging
+        print(f"\n{'='*80}")
+        print(f"📤 COMPLETE API RESPONSE FOR ({lat}, {lon})")
+        print(f"{'='*80}")
+        import json
+        print(json.dumps(response_data, indent=2))
+        print(f"{'='*80}\n")
+
+        return jsonify(response_data)
 
     except Exception as e:
         import traceback
@@ -328,6 +338,40 @@ def alerts(lat: float, lon: float):
     try:
         sensitive_group = request.get_json().get('sensitiveGroup', False)
         data = DashboardService.get_alerts(lat, lon, sensitive_group)
+
+        return jsonify({
+            'success': True,
+            'data': data
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': {
+                'code': 'INTERNAL_ERROR',
+                'message': str(e)
+            }
+        }), 500
+
+
+@app.route('/api/historical', methods=['POST'])
+@require_auth
+@validate_location
+def historical(lat: float, lon: float):
+    """Get historical air quality data with configurable period"""
+    try:
+        request_data = request.get_json() or {}
+        period = request_data.get('period', '7d')
+
+        # Map period string to days
+        period_map = {
+            '7d': 7,
+            '30d': 30,
+            '90d': 90
+        }
+
+        days = period_map.get(period, 7)
+        data = DashboardService.get_historical(lat, lon, days)
 
         return jsonify({
             'success': True,

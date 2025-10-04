@@ -21,10 +21,164 @@ class GeminiSummaryEngine:
         api_key = os.getenv('GEMINI_API_KEY')
         if api_key:
             genai.configure(api_key=api_key)
-            # Use gemini-1.5-flash for faster responses and higher rate limits
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            # Use gemini-2.0-flash-exp (experimental, free with higher limits)
+            # Falls back to gemini-1.5-flash if exp not available
+            try:
+                self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+            except:
+                self.model = genai.GenerativeModel('gemini-1.5-flash')
         else:
             self.model = None
+
+    def generate_all_summaries(self, current_aqi: Dict[str, Any], location: Dict[str, Any],
+                               sources: Dict[str, Any], weather: Dict[str, Any],
+                               forecast: Dict[str, Any], historical: Dict[str, Any],
+                               alerts: Dict[str, Any], aqi_value: int) -> Dict[str, Dict[str, str]]:
+        """Generate ALL summaries in a SINGLE Gemini API call to avoid rate limiting"""
+
+        if not self.model:
+            return {
+                'aqi_summary': self._fallback_aqi_summary(current_aqi),
+                'sources_summary': self._fallback_sources_summary(sources),
+                'weather_summary': self._fallback_weather_summary(weather),
+                'forecast_summary': self._fallback_forecast_summary(forecast),
+                'historical_summary': self._fallback_historical_summary(historical),
+                'alerts_summary': self._fallback_alerts_summary(alerts, aqi_value)
+            }
+
+        prompt = f"""You are an expert air quality analyst. Analyze this comprehensive air quality data and provide insights.
+
+LOCATION: {location.get('city', 'Unknown')}, {location.get('country', 'Unknown')}
+
+CURRENT CONDITIONS:
+- AQI: {aqi_value} ({current_aqi.get('category', 'unknown')})
+- Dominant Pollutant: {current_aqi.get('dominantPollutant', 'unknown')}
+- Pollutants: {json.dumps(current_aqi.get('pollutants', {}))}
+
+WEATHER CONDITIONS (Critical for air quality analysis):
+- Temperature: {weather.get('temperature', 0)}°C
+- Humidity: {weather.get('humidity', 0)}%
+- Wind Speed: {weather.get('windSpeed', 0)} m/s
+- Wind Direction: {weather.get('windDirection', 0)}°
+- Conditions: {weather.get('conditions', 'unknown')}
+- Visibility: {weather.get('visibility', 10000)}m
+
+WEATHER IMPACT ANALYSIS:
+- Strong winds (>7 m/s) disperse pollutants and improve air quality
+- Low winds (<3 m/s) allow pollutants to accumulate
+- High humidity (>70%) can trap pollutants near ground level
+- Rain washes pollutants from air, improving conditions
+- Temperature inversions (cold air trapped below warm) worsen pollution
+
+DATA SOURCES:
+{json.dumps(sources, indent=2)}
+
+24-HOUR FORECAST:
+{json.dumps(forecast, indent=2)}
+
+7-DAY HISTORICAL DATA:
+{json.dumps(historical, indent=2)}
+
+HEALTH ALERTS:
+- Active Alerts: {len(alerts.get('activeAlerts', []))}
+- Upcoming Alerts: {len(alerts.get('upcomingAlerts', []))}
+
+Generate a comprehensive analysis in JSON format with these 6 sections:
+
+{{
+  "aqi_summary": {{
+    "brief": "One sentence about current AQI (max 20 words)",
+    "detailed": "2-3 sentences explaining AQI, category, and dominant pollutant",
+    "recommendation": "Clear action advice for outdoor activities",
+    "insight": "Interesting fact with emoji about air quality patterns"
+  }},
+  "sources_summary": {{
+    "brief": "One sentence about data reliability (max 20 words)",
+    "detailed": "2-3 sentences explaining how satellite and ground data work together",
+    "validation": "Statement about data correlation/agreement",
+    "dataQuality": "Assessment of overall data quality"
+  }},
+  "weather_summary": {{
+    "brief": "One sentence about current weather (max 20 words)",
+    "detailed": "2-3 sentences SPECIFICALLY explaining how current wind speed of {weather.get('windSpeed', 0)} m/s, humidity of {weather.get('humidity', 0)}%, and {weather.get('conditions', 'current conditions')} are affecting air quality RIGHT NOW",
+    "impact": "Clear statement of weather's effect on air quality (favorable/unfavorable and WHY)",
+    "uvAlert": "UV or weather-related health tip"
+  }},
+  "forecast_summary": {{
+    "brief": "One sentence forecast overview (max 20 words)",
+    "detailed": "2-3 sentences about expected air quality changes over next 24 hours",
+    "recommendations": ["tip1", "tip2", "tip3"],
+    "keyInsights": "Most important timing advice for outdoor activities"
+  }},
+  "historical_summary": {{
+    "brief": "One sentence about the weekly trend (max 20 words)",
+    "detailed": "2-3 sentences analyzing patterns and what influenced them",
+    "trendAnalysis": "Insight about the trend direction with emoji (📈 or 📉)",
+    "weeklyInsight": "Comparative insight vs typical conditions",
+    "recommendation": "Advice based on observed patterns"
+  }},
+  "alerts_summary": {{
+    "brief": "One sentence alert summary (max 20 words)",
+    "detailed": "2-3 sentences about who is affected and why",
+    "riskLevel": "Clear risk statement for different groups",
+    "actionRequired": "What people should do (or not do)",
+    "nextUpdate": "When to check again or expect changes"
+  }}
+}}
+
+IMPORTANT:
+- For weather_summary, analyze EXACTLY how the specific weather conditions are influencing air quality
+- Explain wind dispersal, humidity trapping, rain cleansing effects based on ACTUAL values
+- Be specific about whether conditions are favorable or unfavorable and WHY
+- Keep all responses clear, actionable, and focused on user health
+- Return ONLY valid JSON, no extra text"""
+
+        try:
+            import time
+            from logger import structured_logger
+
+            start_time = time.time()
+            response = self.model.generate_content(prompt)
+            duration_ms = int((time.time() - start_time) * 1000)
+
+            # Parse JSON from response
+            text = response.text.strip()
+            if text.startswith('```json'):
+                text = text.split('```json')[1].split('```')[0].strip()
+            elif text.startswith('```'):
+                text = text.split('```')[1].split('```')[0].strip()
+
+            result = json.loads(text)
+
+            # Log comprehensive Gemini response
+            print(f"\n{'='*80}")
+            print(f"🤖 GEMINI AI COMPREHENSIVE RESPONSE (Single Call)")
+            print(f"{'='*80}")
+            print(f"Duration: {duration_ms}ms")
+            print(f"Prompt chars: {len(prompt)}, Response chars: {len(text)}")
+            print(json.dumps(result, indent=2))
+            print(f"{'='*80}\n")
+
+            structured_logger.log_ai_summary('all_summaries', len(text), duration_ms, True)
+
+            return result
+
+        except Exception as e:
+            from logger import structured_logger
+            error_msg = str(e)
+            if '429' in error_msg or 'quota' in error_msg.lower():
+                print(f"Gemini API rate limit hit - using fallback for all summaries")
+            else:
+                print(f"Gemini API error (comprehensive): {error_msg}")
+            structured_logger.log_ai_summary('all_summaries', 0, 0, False)
+            return {
+                'aqi_summary': self._fallback_aqi_summary(current_aqi),
+                'sources_summary': self._fallback_sources_summary(sources),
+                'weather_summary': self._fallback_weather_summary(weather),
+                'forecast_summary': self._fallback_forecast_summary(forecast),
+                'historical_summary': self._fallback_historical_summary(historical),
+                'alerts_summary': self._fallback_alerts_summary(alerts, aqi_value)
+            }
 
     def generate_aqi_summary(self, aqi_data: Dict[str, Any], location: Dict[str, Any]) -> Dict[str, str]:
         """Generate AI summary for current AQI data"""
@@ -66,7 +220,17 @@ Keep it friendly, avoid jargon, be specific and actionable."""
                 text = text.split('```')[1].split('```')[0].strip()
 
             result = json.loads(text)
-            structured_logger.log_ai_summary('aqi_summary', len(text), duration_ms, True)
+            structured_logger.log_ai_summary(
+                'aqi_summary', len(text), duration_ms, True)
+
+            # Log Gemini response
+            print(f"\n{'='*80}")
+            print(f"🤖 GEMINI AI RESPONSE - AQI Summary")
+            print(f"{'='*80}")
+            print(f"Duration: {duration_ms}ms")
+            print(f"Result: {json.dumps(result, indent=2)}")
+            print(f"{'='*80}\n")
+
             return result
         except Exception as e:
             from logger import structured_logger
@@ -115,7 +279,17 @@ Keep it clear and build user confidence in the data."""
                 text = text.split('```')[1].split('```')[0].strip()
 
             result = json.loads(text)
-            structured_logger.log_ai_summary('sources_summary', len(text), duration_ms, True)
+            structured_logger.log_ai_summary(
+                'sources_summary', len(text), duration_ms, True)
+
+            # Log Gemini response
+            print(f"\n{'='*80}")
+            print(f"🤖 GEMINI AI RESPONSE - Data Sources Summary")
+            print(f"{'='*80}")
+            print(f"Duration: {duration_ms}ms")
+            print(f"Result: {json.dumps(result, indent=2)}")
+            print(f"{'='*80}\n")
+
             return result
         except Exception as e:
             from logger import structured_logger
@@ -161,7 +335,17 @@ Be practical and helpful."""
                 text = text.split('```')[1].split('```')[0].strip()
 
             result = json.loads(text)
-            structured_logger.log_ai_summary('weather_summary', len(text), duration_ms, True)
+            structured_logger.log_ai_summary(
+                'weather_summary', len(text), duration_ms, True)
+
+            # Log Gemini response
+            print(f"\n{'='*80}")
+            print(f"🤖 GEMINI AI RESPONSE - Weather Summary")
+            print(f"{'='*80}")
+            print(f"Duration: {duration_ms}ms")
+            print(f"Result: {json.dumps(result, indent=2)}")
+            print(f"{'='*80}\n")
+
             return result
         except Exception as e:
             from logger import structured_logger
@@ -207,7 +391,17 @@ Focus on actionable timing advice."""
                 text = text.split('```')[1].split('```')[0].strip()
 
             result = json.loads(text)
-            structured_logger.log_ai_summary('forecast_summary', len(text), duration_ms, True)
+            structured_logger.log_ai_summary(
+                'forecast_summary', len(text), duration_ms, True)
+
+            # Log Gemini response
+            print(f"\n{'='*80}")
+            print(f"🤖 GEMINI AI RESPONSE - Forecast Summary")
+            print(f"{'='*80}")
+            print(f"Duration: {duration_ms}ms")
+            print(f"Result: {json.dumps(result, indent=2)}")
+            print(f"{'='*80}\n")
+
             return result
         except Exception as e:
             from logger import structured_logger
@@ -257,7 +451,17 @@ Make it insightful and comparative."""
                 text = text.split('```')[1].split('```')[0].strip()
 
             result = json.loads(text)
-            structured_logger.log_ai_summary('historical_summary', len(text), duration_ms, True)
+            structured_logger.log_ai_summary(
+                'historical_summary', len(text), duration_ms, True)
+
+            # Log Gemini response
+            print(f"\n{'='*80}")
+            print(f"🤖 GEMINI AI RESPONSE - Historical Summary")
+            print(f"{'='*80}")
+            print(f"Duration: {duration_ms}ms")
+            print(f"Result: {json.dumps(result, indent=2)}")
+            print(f"{'='*80}\n")
+
             return result
         except Exception as e:
             from logger import structured_logger
@@ -305,7 +509,17 @@ Be clear about risks but not alarmist."""
                 text = text.split('```')[1].split('```')[0].strip()
 
             result = json.loads(text)
-            structured_logger.log_ai_summary('alerts_summary', len(text), duration_ms, True)
+            structured_logger.log_ai_summary(
+                'alerts_summary', len(text), duration_ms, True)
+
+            # Log Gemini response
+            print(f"\n{'='*80}")
+            print(f"🤖 GEMINI AI RESPONSE - Alerts Summary")
+            print(f"{'='*80}")
+            print(f"Duration: {duration_ms}ms")
+            print(f"Result: {json.dumps(result, indent=2)}")
+            print(f"{'='*80}\n")
+
             return result
         except Exception as e:
             from logger import structured_logger
@@ -324,7 +538,7 @@ Be clear about risks but not alarmist."""
             "brief": f"Air quality is {category} with AQI of {aqi}.",
             "detailed": f"Current air quality index is {aqi}, classified as {category}. The dominant pollutant is {aqi_data.get('dominantPollutant', 'unknown')}. Conditions are {'safe for most activities' if aqi <= 100 else 'requiring caution for sensitive groups'}.",
             "recommendation": "Check current conditions before outdoor activities." if aqi > 100 else "Air quality is suitable for outdoor activities.",
-            "insight": "💡 Air quality varies throughout the day - early morning is often best"
+            "insight": "Air quality varies throughout the day - early morning is often best"
         }
 
     def _fallback_sources_summary(self, sources: Dict[str, Any]) -> Dict[str, str]:

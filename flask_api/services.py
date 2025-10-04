@@ -86,10 +86,14 @@ class OpenAQClient:
         """
         Get ground sensor measurements from OpenAQ v3 API
 
+        OpenAQ v3 requires a two-step process:
+        1. GET /locations to find nearby monitoring stations
+        2. GET /locations/{id}/latest to get measurements from each station
+
         Args:
             lat: Latitude
             lon: Longitude
-            radius_km: Search radius in kilometers
+            radius_km: Search radius in kilometers (max 25km)
         """
         try:
             api_key = os.getenv('OPENAQ_API_KEY')
@@ -97,51 +101,107 @@ class OpenAQClient:
             if api_key:
                 headers['X-API-Key'] = api_key
 
-            # Get latest measurements near location
+            # Step 1: Find nearby monitoring locations
             params = {
                 'coordinates': f"{lat},{lon}",
-                'radius': int(radius_km * 1000),  # Convert to meters
-                'limit': 100
+                'radius': min(int(radius_km * 1000), 25000),  # Convert to meters, max 25km
+                'limit': 10  # Get up to 10 nearby stations
             }
 
-            response = requests.get(
-                f"{OpenAQClient.BASE_URL}/latest",
+            locations_response = requests.get(
+                f"{OpenAQClient.BASE_URL}/locations",
                 params=params,
                 headers=headers,
                 timeout=10
             )
 
-            if response.status_code != 200:
-                print(f"OpenAQ API error: Status {response.status_code}")
-                print(f"Response: {response.text[:500]}")
+            if locations_response.status_code != 200:
+                print(f"OpenAQ locations API error: Status {locations_response.status_code}")
+                print(f"Response: {locations_response.text[:500]}")
                 return None
 
-            data = response.json()
-            results = data.get('results', [])
+            locations_data = locations_response.json()
+            locations = locations_data.get('results', [])
 
-            if not results:
-                print(f"OpenAQ: No results found within {radius_km}km of ({lat}, {lon})")
+            if not locations:
+                print(f"OpenAQ: No monitoring stations found within {radius_km}km of ({lat}, {lon})")
                 return None
 
-            # Aggregate measurements by parameter
+            print(f"📍 Found {len(locations)} OpenAQ stations within {radius_km}km")
+
+            # Step 2: Get latest measurements from each location
+            all_measurements = []
+            sensor_map = {}  # Map sensor IDs to parameter names
+
+            for location in locations:
+                location_id = location.get('id')
+                location_name = location.get('name')
+                distance = location.get('distance', 0) / 1000  # Convert to km
+
+                # Build sensor map for this location
+                for sensor in location.get('sensors', []):
+                    sensor_id = sensor.get('id')
+                    param_name = sensor.get('parameter', {}).get('name')
+                    if sensor_id and param_name:
+                        sensor_map[sensor_id] = param_name
+
+                # Fetch latest measurements for this location
+                latest_response = requests.get(
+                    f"{OpenAQClient.BASE_URL}/locations/{location_id}/latest",
+                    headers=headers,
+                    timeout=10
+                )
+
+                if latest_response.status_code == 200:
+                    latest_data = latest_response.json()
+                    measurements = latest_data.get('results', [])
+
+                    print(f"  └─ {location_name} ({distance:.2f}km): {len(measurements)} measurements")
+
+                    for measurement in measurements:
+                        sensor_id = measurement.get('sensorsId')
+                        param_name = sensor_map.get(sensor_id)
+                        value = measurement.get('value')
+
+                        if param_name and value is not None:
+                            all_measurements.append({
+                                'parameter': param_name,
+                                'value': value,
+                                'location': location_name,
+                                'distance': distance
+                            })
+
+            if not all_measurements:
+                print("OpenAQ: No valid measurements from nearby stations")
+                return None
+
+            # Aggregate measurements by parameter (average across all stations)
             aggregated = {}
-            for item in results:
-                parameter = item.get('parameter')
-                value = item.get('value')
-                unit = item.get('unit')
+            for measurement in all_measurements:
+                param = measurement['parameter']
+                value = measurement['value']
 
-                if parameter and value is not None:
-                    if parameter not in aggregated:
-                        aggregated[parameter] = {'values': [], 'unit': unit}
-                    aggregated[parameter]['values'].append(value)
+                if param not in aggregated:
+                    aggregated[param] = {'values': []}
+                aggregated[param]['values'].append(value)
 
-            # Calculate averages
+            # Calculate averages and determine units
             measurements = {}
+            unit_map = {
+                'pm25': 'µg/m³',
+                'pm10': 'µg/m³',
+                'no2': 'ppb',
+                'o3': 'ppm',
+                'so2': 'ppb',
+                'co': 'ppm'
+            }
+
             for param, data in aggregated.items():
                 measurements[param] = {
                     'value': round(np.mean(data['values']), 2),
-                    'unit': data['unit'],
-                    'source': 'OpenAQ Ground Stations'
+                    'unit': unit_map.get(param, 'units'),
+                    'source': 'OpenAQ Ground Stations',
+                    'station_count': len(data['values'])
                 }
 
             from logger import structured_logger
@@ -152,8 +212,9 @@ class OpenAQClient:
             print(f"🏭 OPENAQ RESPONSE")
             print(f"{'='*80}")
             import json
-            print(f"Raw results count: {len(results)}")
-            print(f"Aggregated measurements:")
+            print(f"Stations queried: {len(locations)}")
+            print(f"Total measurements: {len(all_measurements)}")
+            print(f"Aggregated parameters:")
             print(json.dumps(measurements, indent=2))
             print(f"{'='*80}\n")
 
@@ -162,6 +223,8 @@ class OpenAQClient:
         except Exception as e:
             from logger import structured_logger
             print(f"OpenAQ API error: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
             structured_logger.log_data_source('OpenAQ', False, 0, str(e))
             return None
 

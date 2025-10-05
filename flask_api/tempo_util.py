@@ -3,8 +3,6 @@ Helper module for reading NASA TEMPO NetCDF files and extracting pollutant value
 """
 import os
 import glob
-import xarray as xr
-import numpy as np
 
 
 def get_most_recent_tempo_file(data_dir="data/raw/tempo"):
@@ -41,6 +39,8 @@ def auto_detect_pollutant_variable(ds):
     Returns:
         tuple: (variable_name, variable_object) or (None, None) if not found
     """
+    import numpy as np
+
     # Priority keywords to search for
     keywords = ['no2', 'ozone', 'o3', 'hcho', 'co', 'formaldehyde']
 
@@ -142,6 +142,9 @@ def get_nearest_value(file_path, lat, lon):
         return result
 
     try:
+        import xarray as xr
+        import numpy as np
+
         # Open dataset with h5netcdf engine
         ds = xr.open_dataset(file_path, engine='h5netcdf')
 

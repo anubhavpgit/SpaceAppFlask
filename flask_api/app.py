@@ -109,6 +109,15 @@ def validate_location(func):
 # API Routes
 # ============================================================================
 
+@app.route('/', methods=['GET'])
+def root():
+    """Simple root endpoint to test if app is responding"""
+    return jsonify({
+        'status': 'ok',
+        'message': 'ClearSkies API is running',
+        'version': '2.1.0'
+    })
+
 @app.route('/api/health', methods=['GET'])
 def health():
     """

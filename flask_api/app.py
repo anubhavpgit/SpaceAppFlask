@@ -2,6 +2,7 @@
 ClearSkies API - Air Quality Intelligence Platform
 Unified dashboard endpoint for React Native mobile app
 """
+print("🚀 Starting ClearSkies API import...")
 
 from flask import Flask, jsonify, request, g
 from flask_cors import CORS
@@ -9,19 +10,27 @@ from functools import wraps
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+print("✅ Flask imports complete")
 
 from config import config
+print("✅ Config loaded")
 from services import DashboardService
+print("✅ Services imported")
 from auth import require_auth
+print("✅ Auth imported")
 from logger import request_logger, structured_logger, log_api_call
+print("✅ Logger imported")
 
 load_dotenv()
+print("✅ .env loaded")
 
 # Initialize Flask app
 app = Flask(__name__)
+print("✅ Flask app created")
 app.config['JSON_SORT_KEYS'] = config.JSON_SORT_KEYS
 
 # Enable CORS
+print("✅ Configuring CORS...")
 CORS(app, resources={
     r"/api/*": {
         "origins": "*",
@@ -29,6 +38,7 @@ CORS(app, resources={
         "allow_headers": ["Content-Type", "Authorization"]
     }
 })
+print("✅ CORS configured")
 
 # Register request/response logging middleware
 @app.before_request
@@ -533,6 +543,7 @@ def internal_error(error):
         }
     }), 500
 
+print("✅ App module loaded successfully - ready for gunicorn")
 
 if __name__ == '__main__':
     print(f"\n🌤️  ClearSkies API Starting...")

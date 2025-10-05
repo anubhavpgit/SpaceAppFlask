@@ -27,7 +27,7 @@ class TEMPOClient:
             import tempo_util
 
             # Get absolute path to data directory
-            data_dir = os.path.join(os.path.dirname(__file__), '../data/raw/tempo')
+            data_dir = os.path.join(os.path.dirname(__file__), 'data/raw/tempo')
 
             # Get most recent TEMPO file
             tempo_file = tempo_util.get_most_recent_tempo_file(data_dir)

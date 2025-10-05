@@ -14,7 +14,7 @@ def download_tempo_data(
     start_date="2024-09-01",
     end_date="2024-09-05",
     bbox=(-74.259, 40.477, -73.700, 40.917),  # NYC
-    output_dir="../data/raw/tempo",
+    output_dir="data/raw/tempo",
     max_files=5
 ):
     """

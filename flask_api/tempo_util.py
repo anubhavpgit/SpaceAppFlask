@@ -7,7 +7,7 @@ import xarray as xr
 import numpy as np
 
 
-def get_most_recent_tempo_file(data_dir="../data/raw/tempo"):
+def get_most_recent_tempo_file(data_dir="data/raw/tempo"):
     """
     Get the most recently modified NetCDF file from the TEMPO data directory.
 

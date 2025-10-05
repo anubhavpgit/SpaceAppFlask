@@ -51,7 +51,7 @@ yarn-error.log
 *.log
 
 # Data files (optional - uncomment if you don't want to commit data)
-# data/raw/tempo/*.nc
+flask_api/data/raw/tempo/*.nc
 
 # Build outputs
 frontend/dist/

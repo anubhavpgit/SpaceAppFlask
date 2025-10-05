@@ -555,7 +555,6 @@ class DashboardService:
 
         # Generate persona-specific insights if not 'general'
         persona_insights = None
-        live_weather_report = None
         if persona and persona != 'general':
             try:
                 print(f"🎭 Generating persona-specific insights for: {persona}")
@@ -571,17 +570,18 @@ class DashboardService:
                 print(f"Error generating persona insights: {e}")
                 # Continue without persona insights rather than failing
 
-            # Generate live weather report using web search
-            try:
-                print(f"🌐 Generating live weather report for: {persona}")
-                live_weather_report = summary_engine.generate_live_weather_report(
-                    persona_type=persona,
-                    location=location,
-                    current_aqi=current_aqi_raw
-                )
-            except Exception as e:
-                print(f"Error generating live weather report: {e}")
-                # Continue without live report rather than failing
+        # Generate live weather report for ALL personas (including general)
+        live_weather_report = None
+        try:
+            print(f"🌐 Generating live weather report for: {persona}")
+            live_weather_report = summary_engine.generate_live_weather_report(
+                persona_type=persona,
+                location=location,
+                current_aqi=current_aqi_raw
+            )
+        except Exception as e:
+            print(f"Error generating live weather report: {e}")
+            # Continue without live report rather than failing
 
         # Build complete dashboard response
         dashboard = {

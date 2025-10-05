@@ -772,9 +772,65 @@ Return ONLY valid JSON, no extra text"""
         city = location.get('city', 'Unknown')
         country = location.get('country', 'Unknown')
         aqi_value = current_aqi.get('aqi', 0)
+        category = current_aqi.get('category', 'moderate')
 
-        # Use Gemini with Google Search for live information
-        prompt = f"""Search the web for current weather and air quality information about {city}, {country}.
+        # Special prompt for general public - make it feel like a professional weather broadcast
+        if persona_type == 'general':
+            prompt = f"""You're the friendly weather reporter for {city}, {country}. It's time for your live air quality and weather update.
+
+Search the web RIGHT NOW for:
+1. Current weather conditions in {city} (temperature, conditions, wind, humidity)
+2. Today's weather forecast and any weather advisories
+3. Air quality reports, alerts, or advisories for {city}
+4. Any breaking news about pollution, wildfires, or environmental concerns affecting {city}
+5. Local events or conditions that might affect air quality (traffic, construction, fires)
+6. What residents of {city} are talking about regarding weather or air quality today
+
+Our sensors show: AQI {aqi_value} ({category})
+
+Write your weather report in JSON format - imagine you're on the morning news:
+
+{{
+  "headline": "Your opening line - catchy, informative, and conversational. Example: 'Good morning {city}! We're looking at beautiful clear skies and excellent air quality today' or 'Heads up {city} - we've got some hazy conditions rolling in this afternoon'",
+  "current_conditions": "Paint the picture of what it's like outside RIGHT NOW. Use live data from your web search. Talk about the weather, the air, how it feels. Make it vivid and relatable - 'Step outside and you'll feel...' Be conversational and natural.",
+  "health_advisory": "Give people practical health advice in everyday language. Not 'individuals with respiratory conditions should limit exposure' but 'If you've got asthma, maybe take it easy on that morning jog.' Be warm, helpful, and human.",
+  "trending_info": "What's the talk of the town? Any local news, events, or conditions people should know about? Found anything interesting in your web search about {city} today? Share it like you're chatting with a neighbor.",
+  "recommendations": [
+    "Give 3-5 tips people can actually use",
+    "Be specific and practical - 'Great day for that picnic in the park' or 'Maybe hit the gym instead of jogging outside this afternoon'",
+    "Think about what real people do - commute, exercise, take kids to school, walk the dog",
+    "Make it sound natural - 'You might want to...' not 'It is recommended...'"
+  ],
+  "sources": "Where'd you get this intel? 'According to the local weather service...' or 'The latest reports show...' Keep it casual but credible.",
+  "next_update": "When should folks tune back in? 'Check back this afternoon for updated conditions' - friendly and helpful."
+}}
+
+YOUR STYLE GUIDE (THIS IS IMPORTANT):
+✓ You're a friendly local weather reporter, not a robot
+✓ Talk TO people, not AT them - use "you" and "we"
+✓ Be conversational - contractions are good! "We're" not "We are"
+✓ Paint pictures with words - "crisp autumn air" not "temperature: 15°C"
+✓ Use everyday language - "tiny particles in the air" not "particulate matter"
+✓ Be warm and personable - add personality! "Folks," "everyone," "friends"
+✓ Make numbers relatable - "warm 75 degrees" not just "75°F"
+✓ Be honest but optimistic - if it's bad air quality, say so clearly but offer solutions
+✓ Think local - mention the city by name, make it personal to {city}
+✓ Use current web data - this is LIVE, so it should feel fresh and timely
+
+WHAT TO AVOID:
+✗ Don't write like a technical report
+✗ No jargon or scientific terms without explaining them
+✗ Don't be alarmist - be informative
+✗ Don't use robotic phrases like "it is recommended" or "individuals should"
+✗ Don't just restate the AQI number - explain what it MEANS for real life
+
+CRITICAL: Use your web search to find LIVE, current information. This isn't a generic report - it's TODAY's forecast for {city}. If you find local news, weather alerts, or community discussions, work them in naturally!
+
+Search the web thoroughly and return ONLY valid JSON with your live weather report."""
+
+        else:
+            # Prompt for specific personas (school administrators, vulnerable populations, etc.)
+            prompt = f"""Search the web for current weather and air quality information about {city}, {country}.
 
 I'm helping a {persona['display_name']} who needs to know:
 {chr(10).join(['- ' + q for q in persona.get('key_questions', [])])}
@@ -868,6 +924,81 @@ Search the web and return ONLY valid JSON."""
         aqi = current_aqi.get('aqi', 0)
         category = current_aqi.get('category', 'unknown')
 
+        # Special fallback for general public - friendly weather reporter style
+        if persona_type == 'general':
+            # Determine friendly headline based on AQI
+            if aqi <= 50:
+                headline = f"Beautiful day in {city}! We're looking at excellent air quality."
+            elif aqi <= 100:
+                headline = f"Good morning {city}! Air quality is moderate and perfectly fine for most activities."
+            elif aqi <= 150:
+                headline = f"Heads up {city} - air quality is a bit hazy today, but nothing to worry about for most folks."
+            else:
+                headline = f"Important update for {city} - we've got poor air quality today, so let's talk about staying safe."
+
+            # Friendly current conditions
+            if aqi <= 50:
+                conditions = f"Step outside and you'll find great conditions with an AQI of {aqi}. The air is fresh and clear - perfect weather for whatever you've got planned today! Our sensors are showing pristine conditions across the area."
+            elif aqi <= 100:
+                conditions = f"Right now we're sitting at an AQI of {aqi}, which puts us in the moderate range. The air's perfectly breathable for most people - you might notice a bit of haze if you look closely, but it's nothing that should stop you from your daily routine."
+            elif aqi <= 150:
+                conditions = f"Current readings show an AQI of {aqi}. While it's not our clearest day, most of you can go about your business as usual. Sensitive folks - those with asthma or heart conditions - you'll want to take it a bit easier outdoors."
+            else:
+                conditions = f"We're looking at an AQI of {aqi} today, which means the air quality is unhealthy. You can see the haze and feel it in the air. Time to adjust those outdoor plans and keep an eye on this throughout the day."
+
+            # Friendly health advisory
+            if aqi <= 50:
+                health_advisory = "Perfect day for everyone! If you've been putting off that outdoor workout or picnic, today's your day. Even if you've got asthma or other respiratory conditions, you're good to go."
+            elif aqi <= 100:
+                health_advisory = "Most of you are totally fine, but if you've got asthma or heart conditions, maybe dial back the intensity on that outdoor run. Light activities are perfect - save the marathon training for a clearer day."
+            elif aqi <= 150:
+                health_advisory = "If you're dealing with respiratory or heart issues, this is a stay-inside kind of day. Everyone else can be out and about, but maybe skip the heavy exercise outdoors. Take the kids to play, but keep it light."
+            else:
+                health_advisory = "Here's the deal - if you've got asthma, COPD, or heart problems, stay indoors with the windows closed. Everyone else should limit time outside and definitely skip strenuous activities. Save the outdoor workout for another day."
+
+            # Recommendations based on AQI
+            if aqi <= 50:
+                recommendations = [
+                    f"Perfect day for outdoor activities in {city} - get out there and enjoy!",
+                    "Great conditions for exercise, sports, or just spending time outside",
+                    "If you work from home, crack those windows and get some fresh air flowing",
+                    "Ideal time for that walk you've been planning"
+                ]
+            elif aqi <= 100:
+                recommendations = [
+                    "Go ahead with outdoor plans, just keep the intensity moderate",
+                    "If you're sensitive to air quality, maybe stick to indoor exercise today",
+                    "Good day for a walk in the park - just maybe not a full marathon",
+                    "Keep an eye on conditions if you're planning extended outdoor time"
+                ]
+            elif aqi <= 150:
+                recommendations = [
+                    "Sensitive folks should plan indoor activities today",
+                    "Everyone else can be outside, but take it easy on the exercise",
+                    "Keep windows closed if you've got respiratory issues",
+                    "Maybe hit the gym instead of running outside",
+                    "If you're taking the kids out, keep playtime light and watch for any breathing issues"
+                ]
+            else:
+                recommendations = [
+                    "Stay indoors if you can, especially if you have respiratory conditions",
+                    "Keep windows and doors closed to keep the bad air out",
+                    "If you must go outside, keep it brief and avoid physical exertion",
+                    "Check on elderly neighbors or anyone with health conditions",
+                    "Great day for indoor activities - movies, museums, shopping malls"
+                ]
+
+            return {
+                "headline": headline,
+                "current_conditions": conditions,
+                "health_advisory": health_advisory,
+                "trending_info": f"We're keeping an eye on air quality trends for {city}. Our sensors are monitoring conditions continuously, and we'll update you as things change throughout the day.",
+                "recommendations": recommendations,
+                "sources": "Based on real-time sensor data from our monitoring network",
+                "next_update": "We'll have fresh updates in a couple hours. Check back if you're planning outdoor activities later today!"
+            }
+
+        # Fallback for other personas
         return {
             "headline": f"Air quality in {city} is {category}",
             "current_conditions": f"Current AQI of {aqi} indicates {category} air quality conditions.",

@@ -269,6 +269,7 @@ class OpenWeatherClient:
                 'windDirection': data['wind'].get('deg', 0),
                 'conditions': data['weather'][0]['description'],
                 'visibility': data.get('visibility', 10000),
+                'precipitation': data.get('rain', {}).get('1h', 0) + data.get('snow', {}).get('1h', 0),
                 'timestamp': datetime.utcnow().isoformat() + 'Z'
             }
 

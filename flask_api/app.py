@@ -390,6 +390,124 @@ def historical(lat: float, lon: float):
         }), 500
 
 
+@app.route('/api/geocode/reverse', methods=['POST'])
+@require_auth
+@validate_location
+def reverse_geocode(lat: float, lon: float):
+    """
+    Reverse Geocoding: Convert lat/lng to location name
+
+    This endpoint is useful for verifying coordinate calculations.
+    Uses Nominatim (OpenStreetMap) for reverse geocoding.
+
+    Request Body:
+        {
+            "latitude": 20.27,
+            "longitude": 85.84
+        }
+
+    Returns:
+        {
+            "success": true,
+            "data": {
+                "coordinates": {
+                    "latitude": 20.27,
+                    "longitude": 85.84
+                },
+                "location": {
+                    "city": "Bhubaneswar",
+                    "state": "Odisha",
+                    "country": "India",
+                    "displayName": "Bhubaneswar, Odisha, India"
+                }
+            }
+        }
+    """
+    try:
+        import requests
+
+        # Use Nominatim for reverse geocoding
+        nominatim_url = f"https://nominatim.openstreetmap.org/reverse"
+        params = {
+            'lat': lat,
+            'lon': lon,
+            'format': 'json'
+        }
+        headers = {
+            'User-Agent': 'ClearSkies/1.0 (NASA Space Apps Challenge)'
+        }
+
+        response = requests.get(nominatim_url, params=params, headers=headers, timeout=5)
+        response.raise_for_status()
+
+        data = response.json()
+
+        # Parse location data
+        address = data.get('address', {})
+
+        city = (address.get('city') or
+                address.get('town') or
+                address.get('village') or
+                address.get('county') or
+                address.get('state_district') or
+                address.get('state') or
+                'Unknown')
+
+        state = address.get('state', '')
+        country = address.get('country', '')
+
+        # Build display name
+        display_parts = [city]
+        if state and state != city:
+            display_parts.append(state)
+        if country and country != city:
+            display_parts.append(country)
+
+        display_name = ', '.join(display_parts)
+
+        # Check if it's ocean/water
+        if data.get('error') or not address:
+            display_name = f"Ocean ({lat:.2f}°, {lon:.2f}°)"
+            city = "Ocean"
+            state = ""
+            country = ""
+
+        return jsonify({
+            'success': True,
+            'data': {
+                'coordinates': {
+                    'latitude': lat,
+                    'longitude': lon
+                },
+                'location': {
+                    'city': city,
+                    'state': state,
+                    'country': country,
+                    'displayName': display_name
+                },
+                'raw': data  # Include full Nominatim response for debugging
+            }
+        })
+
+    except requests.exceptions.Timeout:
+        return jsonify({
+            'success': False,
+            'error': {
+                'code': 'TIMEOUT',
+                'message': 'Geocoding service timeout'
+            }
+        }), 504
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': {
+                'code': 'GEOCODING_ERROR',
+                'message': str(e)
+            }
+        }), 500
+
+
 # ============================================================================
 # Error Handlers
 # ============================================================================

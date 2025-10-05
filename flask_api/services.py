@@ -827,6 +827,8 @@ class DashboardService:
                 baseline_aqi = AQICalculator.calculate_aqi('pm25', ground_data['pm25']['value']) or 50
 
             # Process forecast data (3-hour intervals from OpenWeather)
+            # First, collect the 8 3-hour forecasts
+            three_hour_forecasts = []
             for item in weather_forecast.get('list', []):
                 forecast_time = datetime.fromtimestamp(item['dt'], tz=pytz.UTC)
                 hour_of_day = forecast_time.hour
@@ -852,8 +854,65 @@ class DashboardService:
                 forecast_aqi = int(baseline_aqi * multiplier * wind_factor * rain_factor)
                 forecast_aqi = max(20, min(200, forecast_aqi))
 
+                three_hour_forecasts.append({
+                    'timestamp': forecast_time,
+                    'aqi': forecast_aqi,
+                    'temperature': item['main']['temp'],
+                    'humidity': item['main']['humidity'],
+                    'windSpeed': wind_speed,
+                    'conditions': item['weather'][0]['description'].title(),
+                    'rain': item.get('rain', {}).get('3h', 0)
+                })
+
+            # Now interpolate to create 24 hourly forecasts
+            for hour in range(24):
+                current_time = base_time + timedelta(hours=hour)
+
+                # Find the two surrounding 3-hour forecasts
+                prev_forecast = None
+                next_forecast = None
+
+                for i, fc in enumerate(three_hour_forecasts):
+                    if fc['timestamp'] <= current_time:
+                        prev_forecast = fc
+                    if fc['timestamp'] > current_time and next_forecast is None:
+                        next_forecast = fc
+                        break
+
+                # Use the closest forecast or interpolate
+                if prev_forecast and next_forecast:
+                    # Linear interpolation
+                    time_diff = (next_forecast['timestamp'] - prev_forecast['timestamp']).total_seconds()
+                    time_from_prev = (current_time - prev_forecast['timestamp']).total_seconds()
+                    ratio = time_from_prev / time_diff if time_diff > 0 else 0
+
+                    forecast_aqi = int(prev_forecast['aqi'] + (next_forecast['aqi'] - prev_forecast['aqi']) * ratio)
+                    temperature = prev_forecast['temperature'] + (next_forecast['temperature'] - prev_forecast['temperature']) * ratio
+                    humidity = int(prev_forecast['humidity'] + (next_forecast['humidity'] - prev_forecast['humidity']) * ratio)
+                    wind_speed = prev_forecast['windSpeed'] + (next_forecast['windSpeed'] - prev_forecast['windSpeed']) * ratio
+                    conditions = prev_forecast['conditions']
+                elif prev_forecast:
+                    forecast_aqi = prev_forecast['aqi']
+                    temperature = prev_forecast['temperature']
+                    humidity = prev_forecast['humidity']
+                    wind_speed = prev_forecast['windSpeed']
+                    conditions = prev_forecast['conditions']
+                elif next_forecast:
+                    forecast_aqi = next_forecast['aqi']
+                    temperature = next_forecast['temperature']
+                    humidity = next_forecast['humidity']
+                    wind_speed = next_forecast['windSpeed']
+                    conditions = next_forecast['conditions']
+                else:
+                    # Fallback
+                    forecast_aqi = baseline_aqi
+                    temperature = 20
+                    humidity = 50
+                    wind_speed = 5
+                    conditions = "Clear"
+
                 # Track best and worst
-                timestamp_str = forecast_time.isoformat().replace('+00:00', 'Z')
+                timestamp_str = current_time.isoformat().replace('+00:00', 'Z')
                 if forecast_aqi < best_aqi:
                     best_aqi = forecast_aqi
                     best_time = timestamp_str
@@ -863,17 +922,17 @@ class DashboardService:
 
                 forecasts.append({
                     'timestamp': timestamp_str,
-                    'hour': forecast_time.strftime('%I %p'),
+                    'hour': current_time.strftime('%I %p'),
                     'aqi': forecast_aqi,
                     'category': AQICalculator.get_category(forecast_aqi),
                     'pollutants': {
                         'pm25': round(forecast_aqi / 4.5, 1),
                         'o3': round(forecast_aqi / 2.2, 1)
                     },
-                    'temperature': round(item['main']['temp'], 1),
-                    'humidity': item['main']['humidity'],
+                    'temperature': round(temperature, 1),
+                    'humidity': humidity,
                     'windSpeed': round(wind_speed * 3.6, 1),  # Convert m/s to km/h
-                    'conditions': item['weather'][0]['description'].title()
+                    'conditions': conditions
                 })
 
             return {
@@ -913,9 +972,12 @@ class DashboardService:
         forecasts = []
         base_time = datetime.utcnow()
 
-        for hour in range(min(hours, 8)):  # Limit to 8 hours for fallback
-            hour_of_day = (base_time + timedelta(hours=hour * 3)).hour
+        # Generate 24 hourly forecasts
+        for hour in range(min(hours, 24)):
+            forecast_time = base_time + timedelta(hours=hour)
+            hour_of_day = forecast_time.hour
 
+            # Traffic pattern multiplier
             if 7 <= hour_of_day <= 9:
                 multiplier = 1.3
             elif 17 <= hour_of_day <= 19:
@@ -926,7 +988,6 @@ class DashboardService:
                 multiplier = 1.0
 
             forecast_aqi = int(baseline_aqi * multiplier)
-            forecast_time = base_time + timedelta(hours=hour * 3)
 
             forecasts.append({
                 'timestamp': forecast_time.isoformat() + 'Z',

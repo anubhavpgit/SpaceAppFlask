@@ -209,7 +209,7 @@ def health():
 @log_api_call
 def dashboard(lat: float, lon: float):
     """
-    Unified Dashboard Endpoint
+    Unified Dashboard Endpoint with Persona Support
 
     Returns all necessary data for React Native dashboard:
     - Current air quality with AQI (raw + AI summary)
@@ -219,12 +219,14 @@ def dashboard(lat: float, lon: float):
     - Historical trends - 7 days (raw + AI summary)
     - Data source comparison (raw + AI summary)
     - Insights and personalized tips
+    - Persona-specific insights (if persona provided)
 
     Request Body:
         {
             "latitude": 37.7749,
             "longitude": -122.4194,
             "deviceId": "optional-device-id",
+            "persona": "school_administrator",  // OPTIONAL: persona type
             "userPreferences": {
                 "sensitiveGroup": false,
                 "units": "metric"
@@ -241,10 +243,11 @@ def dashboard(lat: float, lon: float):
         # Log dashboard request
         user_data = request.get_json() or {}
         device_id = user_data.get('deviceId')
+        persona = user_data.get('persona', 'general')  # NEW: Get persona parameter
         structured_logger.log_dashboard_request(lat, lon, device_id)
 
         # Get comprehensive dashboard data
-        dashboard_data = DashboardService.get_dashboard_data(lat, lon)
+        dashboard_data = DashboardService.get_dashboard_data(lat, lon, persona=persona)
 
         # Update processing time
         processing_time = int((time.time() - start_time) * 1000)
@@ -259,12 +262,11 @@ def dashboard(lat: float, lon: float):
             'data': dashboard_data
         }
 
-        # Log complete response for debugging
+        # Log response (showing persona insights were generated, full details logged separately)
         print(f"\n{'='*80}")
-        print(f"📤 COMPLETE API RESPONSE FOR ({lat}, {lon})")
-        print(f"{'='*80}")
-        import json
-        print(json.dumps(response_data, indent=2))
+        print(f"📤 API RESPONSE FOR ({lat}, {lon}) | Persona: {persona}")
+        print(f"✅ Persona insights: {'generated' if response_data.get('data', {}).get('personaInsights') else 'none'}")
+        print(f"Processing time: {processing_time}ms")
         print(f"{'='*80}\n")
 
         return jsonify(response_data)

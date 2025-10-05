@@ -382,10 +382,15 @@ class DashboardService:
     """Unified Dashboard Service - Aggregates all data sources"""
 
     @staticmethod
-    def get_dashboard_data(lat: float, lon: float) -> Dict[str, Any]:
+    def get_dashboard_data(lat: float, lon: float, persona: str = 'general') -> Dict[str, Any]:
         """
         Get comprehensive dashboard data for React Native app
-        Returns raw data + AI summaries for each section
+        Returns raw data + AI summaries for each section + persona-specific insights
+
+        Args:
+            lat: Latitude
+            lon: Longitude
+            persona: User persona type (e.g., 'school_administrator', 'vulnerable_population', 'general')
         """
         from ai_summary import summary_engine
 
@@ -548,6 +553,36 @@ class DashboardService:
         historical_summary = all_summaries.get('historical_summary', {})
         alerts_summary = all_summaries.get('alerts_summary', {})
 
+        # Generate persona-specific insights if not 'general'
+        persona_insights = None
+        live_weather_report = None
+        if persona and persona != 'general':
+            try:
+                print(f"🎭 Generating persona-specific insights for: {persona}")
+                persona_insights = summary_engine.generate_persona_specific_insights(
+                    persona_type=persona,
+                    current_aqi=current_aqi_raw,
+                    forecast=forecast_raw,
+                    historical=historical_raw,
+                    weather=weather_data or {},
+                    location=location
+                )
+            except Exception as e:
+                print(f"Error generating persona insights: {e}")
+                # Continue without persona insights rather than failing
+
+            # Generate live weather report using web search
+            try:
+                print(f"🌐 Generating live weather report for: {persona}")
+                live_weather_report = summary_engine.generate_live_weather_report(
+                    persona_type=persona,
+                    location=location,
+                    current_aqi=current_aqi_raw
+                )
+            except Exception as e:
+                print(f"Error generating live weather report: {e}")
+                # Continue without live report rather than failing
+
         # Build complete dashboard response
         dashboard = {
             'location': location,
@@ -619,6 +654,15 @@ class DashboardService:
                 ]
             }
         }
+
+        # Add persona insights if generated
+        if persona_insights:
+            dashboard['personaInsights'] = persona_insights
+            dashboard['persona'] = persona
+
+        # Add live weather report if generated
+        if live_weather_report:
+            dashboard['liveWeatherReport'] = live_weather_report
 
         return dashboard
 

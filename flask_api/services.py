@@ -489,9 +489,15 @@ class DashboardService:
         }
 
         # Data sources comparison
+        # Calculate TEMPO AQI properly from NO2
+        tempo_aqi = None
+        if tempo_data and 'no2' in tempo_data:
+            no2_ppb = (tempo_data['no2']['value'] / 1e15) * 20
+            tempo_aqi = AQICalculator.calculate_aqi('no2', no2_ppb)
+
         sources_raw = {
             'tempo': {
-                'aqi': int((tempo_data['no2']['value'] / 1e15) * 20 * 2) if tempo_data else None,
+                'aqi': tempo_aqi,
                 'available': tempo_data is not None,
                 'pollutants': {
                     'no2': tempo_data['no2']['value'] if tempo_data else None,
@@ -517,8 +523,8 @@ class DashboardService:
             },
             'aggregated': {
                 'aqi': overall_aqi,
-                'method': 'weighted_average',
-                'weights': {'tempo': 0.4, 'ground': 0.6},
+                'method': 'max',
+                'description': 'Uses highest AQI from all pollutants (EPA standard)',
                 'confidence': 0.92
             }
         }

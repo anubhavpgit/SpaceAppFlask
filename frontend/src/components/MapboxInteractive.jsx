@@ -431,12 +431,12 @@ const MapboxInteractive = () => {
         )}
       </button>
 
-      {/* Search Box - Mobile responsive, shifts right when sidebar is open on desktop */}
+      {/* Search Box - Mobile responsive, positioned to avoid zoom controls */}
       <div
         className={`absolute top-4 z-30 transition-all duration-300
-          w-[calc(100%-2rem)] max-w-md mx-4
-          md:w-96 md:mx-0
-          ${locationData ? 'md:left-[520px] left-4' : 'left-1/2 -translate-x-1/2'}`}
+          w-[calc(100%-5rem)] max-w-xs left-4
+          md:w-96 md:max-w-md md:mx-0
+          ${locationData ? 'md:left-[520px]' : 'md:left-1/2 md:-translate-x-1/2'}`}
       >
         <div className="relative">
           <input

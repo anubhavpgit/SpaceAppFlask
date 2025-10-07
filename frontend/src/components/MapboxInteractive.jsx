@@ -481,17 +481,17 @@ const MapboxInteractive = () => {
         )}
       </div>
 
-      {/* Instructions Overlay - Mobile responsive */}
+      {/* Instructions Overlay - Mobile responsive, positioned at bottom on mobile */}
       {!selectedLocation && !searchQuery && (
         <motion.div
-          initial={{ y: -100, opacity: 0 }}
+          initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="absolute top-20 md:top-24 left-1/2 -translate-x-1/2 z-10 px-4 max-w-xs md:max-w-none"
+          className="absolute bottom-20 md:top-24 md:bottom-auto left-1/2 -translate-x-1/2 z-10 px-4 max-w-xs md:max-w-none"
         >
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-full shadow-2xl">
             <p className="text-xs md:text-sm font-semibold flex items-center gap-2 text-center">
               <MapPin className="w-4 h-4 md:w-5 md:h-5 animate-bounce flex-shrink-0" />
-              <span>Search or click anywhere to explore</span>
+              <span>Tap or search to explore</span>
             </p>
           </div>
         </motion.div>

@@ -268,46 +268,46 @@ const WeatherCard = ({ weatherData, aqi, loading, selectedDate: propSelectedDate
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="bg-gradient-to-br from-white via-cyan-50 to-blue-100 rounded-3xl p-8 border border-blue-100 shadow-2xl"
+      className="bg-gradient-to-br from-white via-cyan-50 to-blue-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-blue-100 shadow-2xl"
     >
-      {/* Header with Temperature Toggle */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-            <Cloud className="text-blue-600" size={32} />
-            Weather Intelligence
+      {/* Header with Temperature Toggle - Mobile responsive */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3">
+        <div className="min-w-0">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2 sm:gap-3">
+            <Cloud className="text-blue-600 flex-shrink-0" size={24} />
+            <span className="truncate">Weather Intelligence</span>
           </h2>
-          <p className="text-gray-600 mt-1">{location || 'Current Location'}</p>
+          <p className="text-gray-600 mt-1 text-xs sm:text-sm md:text-base truncate">{location || 'Current Location'}</p>
         </div>
 
-        {/* Temperature Scale Toggle */}
-        <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full p-1.5 shadow-lg border border-blue-100">
+        {/* Temperature Scale Toggle - Mobile responsive */}
+        <div className="flex items-center gap-1 sm:gap-2 bg-white/90 backdrop-blur-sm rounded-full p-1 sm:p-1.5 shadow-lg border border-blue-100 flex-shrink-0">
           <button
             onClick={() => setTempScale('C')}
-            className={`px-4 py-2 rounded-full font-semibold transition-all ${
+            className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold transition-all text-xs sm:text-sm ${
               tempScale === 'C'
                 ? 'bg-blue-600 text-white shadow-md'
-                : 'text-gray-600 hover:bg-blue-50'
+                : 'text-gray-600 hover:bg-blue-50 active:bg-blue-100'
             }`}
           >
             °C
           </button>
           <button
             onClick={() => setTempScale('F')}
-            className={`px-4 py-2 rounded-full font-semibold transition-all ${
+            className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold transition-all text-xs sm:text-sm ${
               tempScale === 'F'
                 ? 'bg-blue-600 text-white shadow-md'
-                : 'text-gray-600 hover:bg-blue-50'
+                : 'text-gray-600 hover:bg-blue-50 active:bg-blue-100'
             }`}
           >
             °F
           </button>
           <button
             onClick={() => setTempScale('K')}
-            className={`px-4 py-2 rounded-full font-semibold transition-all ${
+            className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold transition-all text-xs sm:text-sm ${
               tempScale === 'K'
                 ? 'bg-blue-600 text-white shadow-md'
-                : 'text-gray-600 hover:bg-blue-50'
+                : 'text-gray-600 hover:bg-blue-50 active:bg-blue-100'
             }`}
           >
             K
@@ -315,27 +315,30 @@ const WeatherCard = ({ weatherData, aqi, loading, selectedDate: propSelectedDate
         </div>
       </div>
 
-      {/* Date Selector with Horizontal Scroll & Calendar */}
+      {/* Date Selector with Horizontal Scroll & Calendar - Mobile responsive */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="mb-6 p-4 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg"
+        className="mb-4 sm:mb-6 p-3 sm:p-4 bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg"
       >
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <Calendar className="text-blue-600" size={20} />
-            <h3 className="text-lg font-bold text-gray-800">Select Forecast Date</h3>
-            <span className="text-sm text-gray-500">({formatFullDate(selectedDate)})</span>
+        <div className="flex items-center justify-between mb-2 sm:mb-3 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <Calendar className="text-blue-600 flex-shrink-0" size={16} />
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-800 hidden sm:block">Select Forecast Date</h3>
+              <h3 className="text-sm font-bold text-gray-800 sm:hidden">Date</h3>
+              <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 block truncate">({formatFullDate(selectedDate)})</span>
+            </div>
           </div>
 
-          {/* Calendar Toggle Button */}
+          {/* Calendar Toggle Button - responsive */}
           <button
             onClick={() => setShowDatePicker(!showDatePicker)}
-            className="p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-all hover:scale-110"
+            className="p-1.5 sm:p-2 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white transition-all hover:scale-110 flex-shrink-0"
             title="Open calendar"
           >
-            <Calendar size={20} />
+            <Calendar size={16} className="sm:w-5 sm:h-5" />
           </button>
         </div>
 
@@ -449,30 +452,30 @@ const WeatherCard = ({ weatherData, aqi, loading, selectedDate: propSelectedDate
           )}
         </AnimatePresence>
 
-        {/* Horizontal Scrolling Date Picker */}
+        {/* Horizontal Scrolling Date Picker - Mobile optimized */}
         <div className="relative">
-          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-blue-400 scrollbar-track-blue-100 pb-2">
-            <div className="flex gap-3 min-w-max">
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-blue-400 scrollbar-track-blue-100 pb-2 -mx-3 sm:mx-0 px-3 sm:px-0">
+            <div className="flex gap-2 sm:gap-3 min-w-max">
               {getNext16Days().map((date, index) => (
                 <button
                   key={index}
                   onClick={() => setSelectedDate(date)}
-                  className={`flex-shrink-0 px-6 py-3 rounded-xl font-semibold transition-all ${
+                  className={`flex-shrink-0 px-4 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-semibold transition-all active:scale-95 ${
                     date.toDateString() === selectedDate.toDateString()
                       ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg scale-105'
-                      : 'bg-white hover:bg-blue-50 text-gray-700 border border-blue-100 hover:scale-105'
+                      : 'bg-white hover:bg-blue-50 active:bg-blue-100 text-gray-700 border border-blue-100 hover:scale-105'
                   }`}
                 >
-                  <div className="text-xs opacity-75">
+                  <div className="text-[10px] sm:text-xs opacity-75">
                     {isToday(date) ? 'Today' : date.toLocaleDateString('en-US', { weekday: 'short' })}
                   </div>
-                  <div className="text-lg font-bold">{formatDate(date)}</div>
+                  <div className="text-sm sm:text-base md:text-lg font-bold">{formatDate(date)}</div>
                 </button>
               ))}
             </div>
           </div>
           {/* Scroll hint arrows */}
-          <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white/80 to-transparent pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-l from-white/80 to-transparent pointer-events-none rounded-r-xl" />
         </div>
 
         {!isToday(selectedDate) && weatherData?.is_forecast && (
@@ -495,35 +498,35 @@ const WeatherCard = ({ weatherData, aqi, loading, selectedDate: propSelectedDate
         )}
       </motion.div>
 
-      {/* Current Weather */}
+      {/* Current Weather - Mobile responsive */}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}
-        className="mb-6 p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg"
+        className="mb-4 sm:mb-6 p-4 sm:p-6 bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg"
       >
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
             {weatherData?.is_forecast && (
-              <div className="text-xs font-semibold text-blue-600 mb-1 uppercase tracking-wider">
+              <div className="text-[10px] sm:text-xs font-semibold text-blue-600 mb-1 uppercase tracking-wider truncate">
                 📅 {formatFullDate(selectedDate)} Forecast
               </div>
             )}
             {!weatherData?.is_forecast && isToday(selectedDate) && (
-              <div className="text-xs font-semibold text-green-600 mb-1 uppercase tracking-wider">
+              <div className="text-[10px] sm:text-xs font-semibold text-green-600 mb-1 uppercase tracking-wider">
                 ⚡ Real-time Current Conditions
               </div>
             )}
-            <div className="text-7xl font-black text-gray-800 mb-2">
+            <div className="text-5xl sm:text-6xl md:text-7xl font-black text-gray-800 mb-1 sm:mb-2">
               {convertTemp(current?.temperature)}{getTempUnit()}
             </div>
-            <div className="text-xl text-gray-700 font-semibold mb-2">
+            <div className="text-base sm:text-lg md:text-xl text-gray-700 font-semibold mb-1 sm:mb-2 truncate">
               {current?.condition || 'Loading...'}
             </div>
             {aqi && (
-              <div className="mb-2">
-                <span className="text-sm font-semibold text-gray-600">Air Quality: </span>
-                <span className={`text-sm font-bold ${
+              <div className="mb-1 sm:mb-2">
+                <span className="text-xs sm:text-sm font-semibold text-gray-600">Air Quality: </span>
+                <span className={`text-xs sm:text-sm font-bold ${
                   aqi <= 50 ? 'text-green-600' :
                   aqi <= 100 ? 'text-yellow-600' :
                   aqi <= 150 ? 'text-orange-600' :
@@ -532,19 +535,21 @@ const WeatherCard = ({ weatherData, aqi, loading, selectedDate: propSelectedDate
                 }`}>AQI {Math.round(aqi)}</span>
               </div>
             )}
-            <div className="flex items-center gap-4 text-gray-600">
-              <div className="flex items-center gap-2">
-                <Wind size={16} />
-                <span className="text-sm">{current?.wind_speed || '--'} km/h</span>
+            <div className="flex items-center gap-3 sm:gap-4 text-gray-600 flex-wrap">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Wind size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
+                <span className="text-xs sm:text-sm">{current?.wind_speed || '--'} km/h</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Droplets size={16} />
-                <span className="text-sm">{current?.humidity || '--'}% humidity</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Droplets size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
+                <span className="text-xs sm:text-sm">{current?.humidity || '--'}% humidity</span>
               </div>
             </div>
           </div>
-          <div>
-            {getWeatherIcon(current?.condition)}
+          <div className="flex-shrink-0">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+              {getWeatherIcon(current?.condition)}
+            </div>
           </div>
         </div>
       </motion.div>

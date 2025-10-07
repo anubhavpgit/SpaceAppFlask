@@ -418,10 +418,10 @@ const MapboxInteractive = () => {
       {/* Map Container */}
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
-      {/* Fullscreen Toggle Button - Positioned below zoom controls */}
+      {/* Fullscreen Toggle Button - Positioned below zoom controls, hidden on mobile */}
       <button
         onClick={toggleFullscreen}
-        className="absolute top-40 right-4 z-30 p-3 bg-white/95 backdrop-blur-lg rounded-xl shadow-2xl hover:bg-white transition-all hover:scale-110"
+        className="hidden md:block absolute top-40 right-4 z-30 p-3 bg-white/95 backdrop-blur-lg rounded-xl shadow-2xl hover:bg-white transition-all hover:scale-110"
         title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
       >
         {isFullscreen ? (
@@ -431,11 +431,12 @@ const MapboxInteractive = () => {
         )}
       </button>
 
-      {/* Search Box - Shifts right when sidebar is open */}
+      {/* Search Box - Mobile responsive, shifts right when sidebar is open on desktop */}
       <div
-        className={`absolute top-4 z-30 w-96 transition-all duration-300 ${
-          locationData ? 'left-[520px]' : 'left-1/2 -translate-x-1/2'
-        }`}
+        className={`absolute top-4 z-30 transition-all duration-300
+          w-[calc(100%-2rem)] max-w-md mx-4
+          md:w-96 md:mx-0
+          ${locationData ? 'md:left-[520px] left-4' : 'left-1/2 -translate-x-1/2'}`}
       >
         <div className="relative">
           <input
@@ -446,11 +447,11 @@ const MapboxInteractive = () => {
               handleSearch(e.target.value)
             }}
             placeholder="Search for a city or location..."
-            className="w-full px-4 py-3 pl-12 pr-4 bg-white/95 backdrop-blur-lg rounded-xl shadow-2xl border border-white/20 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2.5 pl-10 pr-4 md:px-4 md:py-3 md:pl-12 bg-white/95 backdrop-blur-lg rounded-xl shadow-2xl border border-white/20 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
           />
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-slate-400" />
           {isSearching && (
-            <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-500 animate-spin" />
+            <Loader2 className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-blue-500 animate-spin" />
           )}
         </div>
 
@@ -480,61 +481,97 @@ const MapboxInteractive = () => {
         )}
       </div>
 
-      {/* Instructions Overlay */}
+      {/* Instructions Overlay - Mobile responsive */}
       {!selectedLocation && !searchQuery && (
         <motion.div
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="absolute top-24 left-1/2 -translate-x-1/2 z-10"
+          className="absolute top-20 md:top-24 left-1/2 -translate-x-1/2 z-10 px-4 max-w-xs md:max-w-none"
         >
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-full shadow-2xl">
-            <p className="text-sm font-semibold flex items-center gap-2">
-              <MapPin className="w-5 h-5 animate-bounce" />
-              Search or click anywhere to explore
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-full shadow-2xl">
+            <p className="text-xs md:text-sm font-semibold flex items-center gap-2 text-center">
+              <MapPin className="w-4 h-4 md:w-5 md:h-5 animate-bounce flex-shrink-0" />
+              <span>Search or click anywhere to explore</span>
             </p>
           </div>
         </motion.div>
       )}
 
-      {/* Weather Intelligence Sidebar - Left Side */}
+      {/* Weather Intelligence Sidebar - Responsive: Bottom sheet on mobile, left sidebar on desktop */}
       <AnimatePresence>
         {locationData && !isLoading && (
-          <motion.div
-            initial={{ x: -400, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -400, opacity: 0 }}
-            className="absolute left-4 top-4 bottom-4 w-[450px] z-20 flex flex-col"
-          >
-            {/* Close Button */}
-            <button
-              onClick={() => {
-                setSelectedLocation(null)
-                setLocationData(null)
-                setWildfires([])
-              }}
-              className="absolute -right-12 top-0 p-3 bg-white/95 backdrop-blur-lg rounded-lg shadow-2xl hover:bg-white transition-all hover:scale-110 z-30"
-              title="Close weather panel"
+          <>
+            {/* Mobile: Bottom sheet */}
+            <motion.div
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              className="md:hidden absolute left-0 right-0 bottom-0 top-20 z-20 flex flex-col bg-white rounded-t-3xl shadow-2xl"
             >
-              <X className="w-5 h-5 text-slate-700" />
-            </button>
+              {/* Mobile Close Button */}
+              <button
+                onClick={() => {
+                  setSelectedLocation(null)
+                  setLocationData(null)
+                  setWildfires([])
+                }}
+                className="absolute right-4 top-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-all z-30"
+                title="Close weather panel"
+              >
+                <X className="w-5 h-5 text-slate-700" />
+              </button>
 
-            {/* WeatherCard Container with scrolling */}
-            <div className="overflow-y-auto h-full pr-2">
-              <WeatherCard
-                weatherData={weatherData}
-                aqi={locationData.aqi}
-                loading={isLoading}
-                selectedDate={selectedDate}
-                onDateChange={handleDateChange}
-              />
-            </div>
-          </motion.div>
+              {/* WeatherCard Container with scrolling */}
+              <div className="overflow-y-auto h-full px-4 pt-12 pb-4">
+                <WeatherCard
+                  weatherData={weatherData}
+                  aqi={locationData.aqi}
+                  loading={isLoading}
+                  selectedDate={selectedDate}
+                  onDateChange={handleDateChange}
+                />
+              </div>
+            </motion.div>
+
+            {/* Desktop: Left Sidebar */}
+            <motion.div
+              initial={{ x: -400, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -400, opacity: 0 }}
+              className="hidden md:flex absolute left-4 top-4 bottom-4 w-[450px] lg:w-[500px] z-20 flex-col"
+            >
+              {/* Desktop Close Button */}
+              <button
+                onClick={() => {
+                  setSelectedLocation(null)
+                  setLocationData(null)
+                  setWildfires([])
+                }}
+                className="absolute -right-12 top-0 p-3 bg-white/95 backdrop-blur-lg rounded-lg shadow-2xl hover:bg-white transition-all hover:scale-110 z-30"
+                title="Close weather panel"
+              >
+                <X className="w-5 h-5 text-slate-700" />
+              </button>
+
+              {/* WeatherCard Container with scrolling */}
+              <div className="overflow-y-auto h-full pr-2">
+                <WeatherCard
+                  weatherData={weatherData}
+                  aqi={locationData.aqi}
+                  loading={isLoading}
+                  selectedDate={selectedDate}
+                  onDateChange={handleDateChange}
+                />
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
 
-      {/* Attribution */}
-      <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur px-4 py-2 rounded-lg text-xs text-slate-600 z-10">
-        Powered by Mapbox " NASA FIRMS " WAQI " OpenAQ
+      {/* Attribution - Mobile responsive */}
+      <div className="absolute bottom-2 right-2 md:bottom-4 md:right-4 bg-white/90 backdrop-blur px-2 py-1 md:px-4 md:py-2 rounded-lg text-[10px] md:text-xs text-slate-600 z-10">
+        <span className="hidden md:inline">Powered by Mapbox · NASA FIRMS · WAQI · OpenAQ</span>
+        <span className="md:hidden">Mapbox · NASA · WAQI</span>
       </div>
     </div>
   )

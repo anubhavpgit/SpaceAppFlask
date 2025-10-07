@@ -143,7 +143,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
-      {/* Interactive Mapbox Map - FIRST THING ON PAGE */}
+      {/* Interactive Mapbox Map - FIRST THING ON PAGE - Mobile optimized */}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -151,20 +151,20 @@ const Dashboard = () => {
         className="relative"
       >
         <div className="bg-gradient-to-br from-slate-900 via-gray-900 to-black">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-8 sm:pb-12">
-            <div className="text-center mb-4 sm:mb-6">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 sm:mb-3 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">
+          <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8 pb-6 sm:pb-8 md:pb-12">
+            <div className="text-center mb-3 sm:mb-4 md:mb-6">
+              <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-1 sm:mb-2 md:mb-3 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent px-2">
                 🗺️ Interactive Air Quality Map
               </h2>
-              <p className="text-white/80 text-sm sm:text-base md:text-lg lg:text-xl font-medium px-2">
+              <p className="text-white/80 text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl font-medium px-2">
                 Click anywhere on the map to see weather & air quality data
               </p>
-              <p className="text-white/60 text-xs sm:text-sm mt-1 sm:mt-2 px-2">
+              <p className="text-white/60 text-[10px] sm:text-xs md:text-sm mt-1 sm:mt-2 px-2">
                 Powered by Mapbox satellite imagery & NASA TEMPO data
               </p>
             </div>
 
-            <div className="w-full rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl" style={{ height: '400px', maxHeight: '50vh' }}>
+            <div className="w-full rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden shadow-2xl" style={{ height: '300px', maxHeight: '40vh' }}>
               <MapboxInteractive />
             </div>
           </div>
@@ -179,36 +179,37 @@ const Dashboard = () => {
         className="relative overflow-hidden"
         style={{ background: gradient }}
       >
-        {/* Real-Time Indicator & Export */}
-        <div className="absolute top-4 right-4 flex items-center gap-3 z-20">
+        {/* Real-Time Indicator & Export - Mobile responsive */}
+        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 flex items-center gap-2 sm:gap-3 z-20 flex-wrap justify-end">
           <DataExport data={data} location={location} />
 
           {/* Live Indicator */}
-          <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-lg rounded-lg border border-white/20">
+          <div className="flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-4 sm:py-2 bg-white/10 backdrop-blur-lg rounded-lg border border-white/20">
             <div className="relative">
-              <Radio className="text-green-400 animate-pulse-glow" size={16} />
+              <Radio className="text-green-400 animate-pulse-glow" size={12} />
               <div className="absolute inset-0 bg-green-400 blur-md opacity-50 animate-pulse" />
             </div>
-            <div className="text-white text-sm font-semibold">
+            <div className="text-white text-xs sm:text-sm font-semibold">
               LIVE
             </div>
           </div>
         </div>
 
-        {/* Auto-refresh Timer */}
-        <div className="absolute top-4 left-4 z-20">
-          <div className="flex items-center gap-2 px-3 py-2 bg-white/10 backdrop-blur-lg rounded-lg border border-white/20 text-white text-xs">
-            <Activity size={14} className="text-blue-400" />
-            <span>Next update: {countdown}s</span>
+        {/* Auto-refresh Timer - Mobile responsive */}
+        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-20">
+          <div className="flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 bg-white/10 backdrop-blur-lg rounded-lg border border-white/20 text-white text-[10px] sm:text-xs">
+            <Activity size={12} className="text-blue-400" />
+            <span className="hidden sm:inline">Next update: {countdown}s</span>
+            <span className="sm:hidden">{countdown}s</span>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20 text-center">
-          <h1 className="text-white text-lg sm:text-xl md:text-2xl lg:text-3xl font-light mb-3 sm:mb-4 px-2">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-8 sm:py-12 md:py-16 lg:py-20 text-center">
+          <h1 className="text-white text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-light mb-2 sm:mb-3 md:mb-4 px-2">
             {locationDetails?.city || apiLocation.city || `${apiLocation.lat}, ${apiLocation.lon}`}
           </h1>
           {locationDetails?.precision && (
-            <p className="text-white/60 text-xs sm:text-sm mb-2 px-2">
+            <p className="text-white/60 text-[10px] sm:text-xs md:text-sm mb-2 px-2 leading-relaxed">
               Precise location: {locationDetails.neighborhood || locationDetails.city}
               {locationDetails.state && `, ${locationDetails.state}`}
               {locationDetails.country && `, ${locationDetails.country}`}
@@ -217,30 +218,30 @@ const Dashboard = () => {
           )}
 
           {/* AQI Label */}
-          <div className="text-white/80 text-base sm:text-lg md:text-xl lg:text-2xl font-medium mb-2 tracking-wider px-2">
+          <div className="text-white/80 text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl font-medium mb-1 sm:mb-2 tracking-wider px-2">
             AIR QUALITY INDEX (AQI)
           </div>
 
-          {/* Giant AQI Number with CountUp */}
-          <div className="text-white text-7xl sm:text-8xl md:text-9xl lg:text-[12rem] font-black leading-none mb-3 sm:mb-4">
+          {/* Giant AQI Number with CountUp - Mobile optimized */}
+          <div className="text-white text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-[12rem] font-black leading-none mb-2 sm:mb-3 md:mb-4">
             <CountUp end={aqi} duration={1.5} />
           </div>
 
-          <div className="text-white text-2xl sm:text-3xl md:text-4xl font-semibold mb-2 px-2">
+          <div className="text-white text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold mb-2 px-2">
             {category}
           </div>
 
-          <div className="text-white/60 text-xs sm:text-sm mb-3 sm:mb-4">
+          <div className="text-white/60 text-[10px] sm:text-xs md:text-sm mb-2 sm:mb-3 md:mb-4">
             EPA Standard Scale (0-500)
           </div>
 
           {/* Health Recommendation */}
-          <p className="text-white/90 text-sm sm:text-base md:text-lg lg:text-xl max-w-2xl mx-auto px-4">
+          <p className="text-white/90 text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl max-w-2xl mx-auto px-4 leading-relaxed">
             {health_guidance.general_public || getHealthRecommendation(aqi)}
           </p>
 
           {/* Last Updated */}
-          <p className="text-white/50 text-xs sm:text-sm mt-4 sm:mt-6">
+          <p className="text-white/50 text-[10px] sm:text-xs md:text-sm mt-3 sm:mt-4 md:mt-6">
             Updated {formatDistanceToNow(lastUpdate, { addSuffix: true })}
           </p>
         </div>
@@ -249,22 +250,22 @@ const Dashboard = () => {
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-900 to-transparent" />
       </motion.div>
 
-      {/* Details Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Umbrella Alert Banner */}
+      {/* Details Section - Mobile responsive padding */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6 sm:py-8 md:py-12">
+        {/* Umbrella Alert Banner - Mobile optimized */}
         {weatherData?.umbrella_needed && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8 p-6 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-2xl shadow-2xl"
+            className="mb-4 sm:mb-6 md:mb-8 p-4 sm:p-5 md:p-6 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-xl sm:rounded-2xl shadow-2xl"
           >
-            <div className="flex items-center gap-4 text-white">
-              <div className="p-4 bg-white/20 rounded-full">
-                <Umbrella size={32} />
+            <div className="flex items-center gap-3 sm:gap-4 text-white">
+              <div className="p-2 sm:p-3 md:p-4 bg-white/20 rounded-full flex-shrink-0">
+                <Umbrella size={24} className="sm:w-7 sm:h-7 md:w-8 md:h-8" />
               </div>
-              <div className="flex-1">
-                <h3 className="text-2xl font-bold mb-1">Umbrella Alert</h3>
-                <p className="text-blue-50 text-lg">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-1">Umbrella Alert</h3>
+                <p className="text-blue-50 text-sm sm:text-base md:text-lg">
                   {weatherData.umbrella_needed.message || 'Rain expected today - bring an umbrella!'}
                 </p>
               </div>
@@ -272,21 +273,21 @@ const Dashboard = () => {
           </motion.div>
         )}
 
-        {/* Wildfire Alert */}
+        {/* Wildfire Alert - Mobile optimized */}
         {wildfireData && wildfireData.wildfire_detected && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+            className="mb-4 sm:mb-6 md:mb-8"
           >
             <WildfireAlert wildfireData={wildfireData} />
             {wildfireData.closest_fire && locationDetails && (
-              <div className="mt-4 p-6 bg-orange-50 border border-orange-200 rounded-2xl">
-                <h4 className="text-lg font-bold text-orange-800 mb-3">Wildfire Location Details</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div className="mt-3 sm:mt-4 p-4 sm:p-5 md:p-6 bg-orange-50 border border-orange-200 rounded-xl sm:rounded-2xl">
+                <h4 className="text-base sm:text-lg font-bold text-orange-800 mb-2 sm:mb-3">Wildfire Location Details</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 md:gap-4 text-xs sm:text-sm">
                   <div>
                     <span className="font-semibold text-gray-700">Coordinates: </span>
-                    <span className="text-gray-600">
+                    <span className="text-gray-600 break-all">
                       {wildfireData.closest_fire.latitude.toFixed(4)}, {wildfireData.closest_fire.longitude.toFixed(4)}
                     </span>
                   </div>
@@ -308,8 +309,8 @@ const Dashboard = () => {
           </motion.div>
         )}
 
-        {/* Featured Cards: Breath Score & Weather */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Featured Cards: Breath Score & Weather - Mobile optimized spacing */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 mb-4 sm:mb-6 md:mb-8">
           <BreathScoreCard breathData={breathData} aqi={aqi} loading={loading && !breathData} />
           <WeatherCard
             weatherData={weatherData}
